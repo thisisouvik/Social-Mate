@@ -1,0 +1,229 @@
+import { API_BASE_URL } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
+import type { FeedComment, FeedPost, FollowUser, StoryItem } from '@/types/social';
+
+interface BackendPostImage {
+  image_url: string;
+}
+
+interface BackendPost {
+  id: string;
+  author_id: string;
+  author_username: string;
+  author_display_name: string;
+  author_avatar_url: string | null;
+  caption: string;
+  images: BackendPostImage[];
+  likes_count: number;
+  comments_count: number;
+  shares_count: number;
+  created_at: string;
+}
+
+interface BackendComment {
+  id: string;
+  post: string;
+  user_id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  text: string;
+  created_at: string;
+}
+
+interface BackendFollow {
+  follower_id: string;
+  follower_username: string;
+  follower_display_name: string;
+  follower_avatar_url: string | null;
+  following_id: string;
+  following_username: string;
+  following_display_name: string;
+  following_avatar_url: string | null;
+}
+
+function defaultAvatar(seed: string) {
+  return `https://i.pravatar.cc/150?u=${encodeURIComponent(seed)}`;
+}
+
+function mapPost(post: BackendPost): FeedPost {
+  return {
+    id: post.id,
+    authorId: post.author_id,
+    authorName: post.author_display_name || post.author_username,
+    authorAvatar: post.author_avatar_url || defaultAvatar(post.author_id),
+    content: post.caption || '',
+    imageUrl: post.images[0]?.image_url,
+    likes: post.likes_count,
+    comments: post.comments_count,
+    shares: post.shares_count,
+    createdAt: post.created_at,
+    isLiked: false,
+  };
+}
+
+function mapComment(comment: BackendComment): FeedComment {
+  return {
+    id: comment.id,
+    postId: comment.post,
+    userId: comment.user_id,
+    username: comment.username,
+    displayName: comment.display_name || comment.username,
+    avatarUrl: comment.avatar_url || defaultAvatar(comment.user_id),
+    text: comment.text,
+    createdAt: comment.created_at,
+  };
+}
+
+async function getAccessToken() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    throw error;
+  }
+
+  const token = data.session?.access_token;
+  if (!token) {
+    throw new Error('No active Supabase session found.');
+  }
+
+  return token;
+}
+
+async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await getAccessToken();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...(init?.headers || {}),
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Request failed with status ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export async function fetchPosts() {
+  const data = await apiRequest<BackendPost[]>('/api/posts/');
+  return data.map(mapPost);
+}
+
+export async function fetchPostById(postId: string) {
+  const data = await apiRequest<BackendPost>(`/api/posts/${postId}/`);
+  return mapPost(data);
+}
+
+export async function createPost(caption: string) {
+  const data = await apiRequest<BackendPost>('/api/posts/', {
+    method: 'POST',
+    body: JSON.stringify({ caption }),
+  });
+  return mapPost(data);
+}
+
+export async function togglePostLike(postId: string) {
+  return apiRequest<{ is_liked: boolean; likes_count: number }>(`/api/posts/${postId}/like/`, {
+    method: 'POST',
+  });
+}
+
+export async function sharePost(postId: string, platform = 'mobile') {
+  return apiRequest<{ shares_count: number }>(`/api/posts/${postId}/share/`, {
+    method: 'POST',
+    body: JSON.stringify({ platform }),
+  });
+}
+
+export async function fetchPostComments(postId: string) {
+  const data = await apiRequest<BackendComment[]>(`/api/posts/${postId}/comments/`);
+  return data.map(mapComment);
+}
+
+export async function createPostComment(postId: string, text: string) {
+  const data = await apiRequest<BackendComment & { comments_count: number }>(`/api/posts/${postId}/comments/`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  });
+
+  return {
+    comment: mapComment(data),
+    commentsCount: data.comments_count,
+  };
+}
+
+export async function fetchFollowers(userId: string) {
+  return apiRequest<BackendFollow[]>(`/api/follows/${userId}/followers/`);
+}
+
+export async function fetchFollowing(userId: string) {
+  return apiRequest<BackendFollow[]>(`/api/follows/${userId}/following/`);
+}
+
+export async function toggleFollow(userId: string) {
+  return apiRequest<{ is_following: boolean }>(`/api/follows/${userId}/toggle/`, {
+    method: 'POST',
+  });
+}
+
+export function buildStoriesFromPosts(posts: FeedPost[], currentUserName?: string, currentUserAvatar?: string): StoryItem[] {
+  const stories: StoryItem[] = [];
+
+  if (currentUserName || currentUserAvatar) {
+    stories.push({
+      id: 'own-story',
+      user: currentUserName || 'You',
+      avatar: currentUserAvatar || defaultAvatar('me'),
+      hasStory: false,
+      isOwn: true,
+    });
+  }
+
+  const seen = new Set<string>();
+  for (const post of posts) {
+    if (seen.has(post.authorId)) {
+      continue;
+    }
+
+    seen.add(post.authorId);
+    stories.push({
+      id: `story-${post.authorId}`,
+      user: post.authorName,
+      avatar: post.authorAvatar,
+      hasStory: true,
+    });
+
+    if (stories.length >= 10) {
+      break;
+    }
+  }
+
+  return stories;
+}
+
+export function buildPeopleSuggestionsFromFollows(
+  followers: BackendFollow[],
+  following: BackendFollow[],
+  currentUserId: string,
+): FollowUser[] {
+  const followingIds = new Set(following.map((item) => item.following_id));
+
+  return followers
+    .filter((item) => item.follower_id !== currentUserId)
+    .map((item) => ({
+      id: item.follower_id,
+      username: item.follower_username,
+      displayName: item.follower_display_name || item.follower_username,
+      avatarUrl: item.follower_avatar_url || defaultAvatar(item.follower_id),
+      isFollowing: followingIds.has(item.follower_id),
+    }))
+    .sort((a, b) => Number(a.isFollowing) - Number(b.isFollowing));
+}

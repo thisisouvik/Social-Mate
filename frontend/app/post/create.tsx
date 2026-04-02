@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Avatar from '@/components/ui/Avatar';
 import { useAuth } from '@/context/AuthContext';
+import { createPost } from '@/lib/socialApi';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius, FontSize, FontWeight, Spacing } from '@/constants/AppTheme';
 
@@ -31,11 +32,21 @@ export default function CreatePostScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [content, setContent] = useState('');
-  const [audience, setAudience] = useState('Public');
+  const audience = 'Public';
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handlePost() {
-    // In real app, submit post to API
-    router.back();
+  async function handlePost() {
+    if (!content.trim() || isSubmitting) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await createPost(content.trim());
+      router.back();
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -49,10 +60,12 @@ export default function CreatePostScreen() {
           <Text style={styles.headerTitle}>Create a Post</Text>
           <TouchableOpacity
             onPress={handlePost}
-            style={[styles.postBtn, !content && styles.postBtnDisabled]}
-            disabled={!content}
+            style={[styles.postBtn, (!content || isSubmitting) && styles.postBtnDisabled]}
+            disabled={!content || isSubmitting}
           >
-            <Text style={[styles.postBtnText, !content && styles.postBtnTextDisabled]}>Post</Text>
+            <Text style={[styles.postBtnText, (!content || isSubmitting) && styles.postBtnTextDisabled]}>
+              {isSubmitting ? 'Posting...' : 'Post'}
+            </Text>
           </TouchableOpacity>
         </View>
 

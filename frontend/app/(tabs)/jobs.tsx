@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { MOCK_JOBS } from '@/data/mockData';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius, FontSize, FontWeight, Shadow, Spacing } from '@/constants/AppTheme';
 
-type Job = typeof MOCK_JOBS[0];
+type Job = {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  salary: string;
+  type: string;
+  postedAt: string;
+  isBookmarked: boolean;
+};
 
 export default function JobsScreen() {
-  const [jobs, setJobs] = useState(MOCK_JOBS);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
 
@@ -70,7 +78,6 @@ export default function JobsScreen() {
         renderItem={({ item }: { item: Job }) => (
           <TouchableOpacity style={styles.card} activeOpacity={0.9}>
             <View style={styles.cardTop}>
-              <Image source={{ uri: item.logo }} style={styles.logo} />
               <View style={styles.jobInfo}>
                 <Text style={styles.jobTitle}>{item.title}</Text>
                 <Text style={styles.company}>{item.company}</Text>
@@ -108,6 +115,13 @@ export default function JobsScreen() {
           </TouchableOpacity>
         )}
       />
+
+      {filtered.length === 0 && (
+        <View style={styles.emptyWrap}>
+          <Ionicons name="briefcase-outline" size={44} color={Colors.text.muted} />
+          <Text style={styles.emptyText}>No job data yet.</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -146,7 +160,6 @@ const styles = StyleSheet.create({
     padding: Spacing.base, ...Shadow.sm,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
-  logo: { width: 48, height: 48, borderRadius: BorderRadius.sm, marginRight: Spacing.md },
   jobInfo: { flex: 1 },
   jobTitle: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.text.primary },
   company: { fontSize: FontSize.sm, color: Colors.text.secondary, marginTop: 2 },
@@ -164,4 +177,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base, paddingVertical: Spacing.xs + 2,
   },
   applyBtnText: { fontSize: FontSize.sm, color: Colors.text.white, fontWeight: FontWeight.semibold },
+  emptyWrap: { alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.lg },
+  emptyText: { color: Colors.text.secondary, fontSize: FontSize.base },
 });

@@ -85,7 +85,7 @@ function SignInForm({ onSwitch }: { onSwitch: () => void }) {
       </View>
 
       <TouchableOpacity onPress={onSwitch} style={styles.switchRow}>
-        <Text style={styles.switchText}>Don't have an Account? </Text>
+        <Text style={styles.switchText}>Don&apos;t have an Account? </Text>
         <Text style={styles.switchLink}>Sign up</Text>
       </TouchableOpacity>
     </View>

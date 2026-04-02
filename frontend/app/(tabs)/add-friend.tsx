@@ -1,26 +1,59 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Image, TextInput,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { MOCK_FRIENDS } from '@/data/mockData';
+import Avatar from '@/components/ui/Avatar';
+import { useAuth } from '@/context/AuthContext';
+import {
+  buildPeopleSuggestionsFromFollows,
+  fetchFollowers,
+  fetchFollowing,
+  toggleFollow,
+} from '@/lib/socialApi';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius, FontSize, FontWeight, Shadow, Spacing } from '@/constants/AppTheme';
+import type { FollowUser } from '@/types/social';
 
 export default function AddFriendScreen() {
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
-  const [friends, setFriends] = useState(
-    MOCK_FRIENDS.map(f => ({ ...f, added: false }))
+  const [people, setPeople] = useState<FollowUser[]>([]);
+
+  const loadPeople = useCallback(async () => {
+    if (!user?.id) {
+      setPeople([]);
+      return;
+    }
+
+    try {
+      const [followers, following] = await Promise.all([
+        fetchFollowers(user.id),
+        fetchFollowing(user.id),
+      ]);
+      setPeople(buildPeopleSuggestionsFromFollows(followers, following, user.id));
+    } catch {
+      setPeople([]);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadPeople();
+  }, [loadPeople]);
+
+  const filtered = useMemo(
+    () =>
+      people.filter((person) =>
+        `${person.displayName} ${person.username}`.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [people, search],
   );
 
-  const filtered = friends.filter(f =>
-    f.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-  function toggleAdd(id: string) {
-    setFriends(prev => prev.map(f => f.id === id ? { ...f, added: !f.added } : f));
+  async function handleToggleFollow(id: string) {
+    const result = await toggleFollow(id);
+    setPeople((prev) => prev.map((person) => (person.id === id ? { ...person, isFollowing: result.is_following } : person)));
   }
 
   return (
@@ -49,30 +82,26 @@ export default function AddFriendScreen() {
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Image source={{ uri: item.avatar }} style={styles.avatar} />
+            <Avatar uri={item.avatarUrl} name={item.displayName} size={52} />
             <View style={styles.info}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.mutual}>
-                <Ionicons name="people-outline" size={12} color={Colors.text.muted} />
-                {'  '}{item.mutualFriends} mutual friends
-              </Text>
+              <Text style={styles.name}>{item.displayName}</Text>
               <Text style={styles.location}>
-                <Ionicons name="location-outline" size={12} color={Colors.text.muted} />
-                {'  '}{item.location}
+                <Ionicons name="at-outline" size={12} color={Colors.text.muted} />
+                {'  '}@{item.username}
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.addBtn, item.added && styles.addBtnActive]}
-              onPress={() => toggleAdd(item.id)}
+              style={[styles.addBtn, item.isFollowing && styles.addBtnActive]}
+              onPress={() => handleToggleFollow(item.id)}
               activeOpacity={0.8}
             >
               <Ionicons
-                name={item.added ? 'checkmark' : 'person-add-outline'}
+                name={item.isFollowing ? 'checkmark' : 'person-add-outline'}
                 size={16}
-                color={item.added ? Colors.text.white : Colors.primary}
+                color={item.isFollowing ? Colors.text.white : Colors.primary}
               />
-              <Text style={[styles.addBtnText, item.added && styles.addBtnTextActive]}>
-                {item.added ? 'Added' : 'Add'}
+              <Text style={[styles.addBtnText, item.isFollowing && styles.addBtnTextActive]}>
+                {item.isFollowing ? 'Following' : 'Follow'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -121,10 +150,8 @@ const styles = StyleSheet.create({
     padding: Spacing.base,
     ...Shadow.sm,
   },
-  avatar: { width: 52, height: 52, borderRadius: 26, marginRight: Spacing.md },
-  info: { flex: 1, gap: 3 },
+  info: { flex: 1, gap: 3, marginLeft: Spacing.md },
   name: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.text.primary },
-  mutual: { fontSize: FontSize.xs, color: Colors.text.muted },
   location: { fontSize: FontSize.xs, color: Colors.text.muted },
   addBtn: {
     flexDirection: 'row',

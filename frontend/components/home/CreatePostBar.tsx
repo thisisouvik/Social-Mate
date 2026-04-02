@@ -18,7 +18,7 @@ export default function CreatePostBar({ user }: CreatePostBarProps) {
       <View style={styles.top}>
         <Avatar uri={user?.avatar} name={user?.name} size={42} />
         <TouchableOpacity style={styles.input} onPress={() => router.push('/post/create')} activeOpacity={0.7}>
-          <Text style={styles.placeholder}>What's on your head?</Text>
+          <Text style={styles.placeholder}>What&apos;s on your head?</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.divider} />

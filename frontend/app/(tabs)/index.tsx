@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Text, RefreshControl } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Text, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '@/components/shared/Logo';
@@ -7,19 +7,77 @@ import CreatePostBar from '@/components/home/CreatePostBar';
 import StoryBar from '@/components/home/StoryBar';
 import PostCard from '@/components/home/PostCard';
 import { useAuth } from '@/context/AuthContext';
-import { MOCK_POSTS, MOCK_STORIES } from '@/data/mockData';
+import { buildStoriesFromPosts, fetchPosts, sharePost, togglePostLike } from '@/lib/socialApi';
 import { Colors } from '@/constants/Colors';
 import { FontSize, Spacing } from '@/constants/AppTheme';
+import type { FeedPost } from '@/types/social';
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const [posts, setPosts] = useState(MOCK_POSTS);
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const stories = useMemo(
+    () => buildStoriesFromPosts(posts, user?.name, user?.avatar),
+    [posts, user?.name, user?.avatar],
+  );
+
+  useEffect(() => {
+    loadFeed();
+  }, []);
+
+  async function loadFeed() {
+    try {
+      const data = await fetchPosts();
+      setPosts(data);
+    } catch {
+      setPosts([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function onRefresh() {
     setRefreshing(true);
-    await new Promise(r => setTimeout(r, 1200));
+    await loadFeed();
     setRefreshing(false);
+  }
+
+  async function handleLike(postId: string) {
+    const result = await togglePostLike(postId);
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              isLiked: result.is_liked,
+              likes: result.likes_count,
+            }
+          : post,
+      ),
+    );
+
+    return {
+      isLiked: result.is_liked,
+      likesCount: result.likes_count,
+    };
+  }
+
+  async function handleShare(postId: string) {
+    const result = await sharePost(postId);
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              shares: result.shares_count,
+            }
+          : post,
+      ),
+    );
+
+    return { sharesCount: result.shares_count };
   }
 
   return (
@@ -52,14 +110,24 @@ export default function HomeScreen() {
 
         {/* Stories */}
         <View style={styles.section}>
-          <StoryBar stories={MOCK_STORIES} />
+          <StoryBar stories={stories} />
         </View>
 
         {/* Feed */}
         <View style={{ paddingTop: Spacing.sm }}>
-          {posts.map(post => (
-            <PostCard key={post.id} post={post} />
-          ))}
+          {loading ? (
+            <View style={styles.loadingWrap}>
+              <ActivityIndicator size="small" color={Colors.primary} />
+            </View>
+          ) : posts.length === 0 ? (
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyText}>No posts yet.</Text>
+            </View>
+          ) : (
+            posts.map(post => (
+              <PostCard key={post.id} post={post} onLike={handleLike} onShare={handleShare} />
+            ))
+          )}
         </View>
 
         <View style={{ height: 20 }} />
@@ -101,5 +169,17 @@ const styles = StyleSheet.create({
     borderTopColor: '#F0F0F0',
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+  },
+  loadingWrap: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  emptyWrap: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  emptyText: {
+    fontSize: FontSize.base,
+    color: Colors.text.secondary,
   },
 });

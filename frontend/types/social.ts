@@ -1,0 +1,40 @@
+export interface FeedPost {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  content: string;
+  imageUrl?: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  createdAt: string;
+  isLiked: boolean;
+}
+
+export interface FeedComment {
+  id: string;
+  postId: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface FollowUser {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+  isFollowing: boolean;
+}
+
+export interface StoryItem {
+  id: string;
+  user: string;
+  avatar: string;
+  hasStory: boolean;
+  isOwn?: boolean;
+}

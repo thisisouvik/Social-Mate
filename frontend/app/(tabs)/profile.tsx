@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Image, ScrollView,
   TouchableOpacity,
@@ -9,9 +9,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Avatar from '@/components/ui/Avatar';
 import PostCard from '@/components/home/PostCard';
 import { useAuth } from '@/context/AuthContext';
-import { MOCK_POSTS } from '@/data/mockData';
+import { fetchPosts, togglePostLike } from '@/lib/socialApi';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius, FontSize, FontWeight, Shadow, Spacing } from '@/constants/AppTheme';
+import type { FeedPost } from '@/types/social';
 
 function StatBox({ label, value }: { label: string; value: string | number }) {
   return (
@@ -25,7 +26,45 @@ function StatBox({ label, value }: { label: string; value: string | number }) {
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<'posts' | 'details'>('posts');
-  const myPosts = MOCK_POSTS.filter((_, i) => i < 2);
+  const [myPosts, setMyPosts] = useState<FeedPost[]>([]);
+
+  const loadMyPosts = useCallback(async () => {
+    if (!user?.id) {
+      setMyPosts([]);
+      return;
+    }
+
+    try {
+      const posts = await fetchPosts();
+      setMyPosts(posts.filter((post) => post.authorId === user.id));
+    } catch {
+      setMyPosts([]);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadMyPosts();
+  }, [loadMyPosts]);
+
+  async function handleLike(postId: string) {
+    const result = await togglePostLike(postId);
+    setMyPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              isLiked: result.is_liked,
+              likes: result.likes_count,
+            }
+          : post,
+      ),
+    );
+
+    return {
+      isLiked: result.is_liked,
+      likesCount: result.likes_count,
+    };
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -99,8 +138,13 @@ export default function ProfileScreen() {
         {activeTab === 'posts' ? (
           <View style={{ paddingTop: Spacing.sm }}>
             {myPosts.map(post => (
-              <PostCard key={post.id} post={{ ...post, user: { ...post.user, name: user?.name ?? post.user.name, avatar: user?.avatar ?? post.user.avatar } }} />
+              <PostCard key={post.id} post={post} onLike={handleLike} />
             ))}
+            {myPosts.length === 0 && (
+              <View style={styles.emptyPosts}>
+                <Text style={styles.emptyPostsText}>You have not posted anything yet.</Text>
+              </View>
+            )}
           </View>
         ) : (
           <View style={styles.detailsSection}>
@@ -193,4 +237,6 @@ const styles = StyleSheet.create({
   },
   detailLabel: { fontSize: FontSize.xs, color: Colors.text.muted },
   detailValue: { fontSize: FontSize.base, color: Colors.text.primary, fontWeight: FontWeight.medium },
+  emptyPosts: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.lg, alignItems: 'center' },
+  emptyPostsText: { color: Colors.text.secondary, fontSize: FontSize.base },
 });

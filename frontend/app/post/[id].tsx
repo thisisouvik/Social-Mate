@@ -1,58 +1,53 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Image, TouchableOpacity,
-  TextInput, KeyboardAvoidingView, Platform,
+  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Avatar from '@/components/ui/Avatar';
-import { MOCK_COMMENTS, MOCK_POSTS, LIKE_AVATARS } from '@/data/mockData';
-import { useAuth } from '@/context/AuthContext';
+import { createPostComment, fetchPostById, fetchPostComments } from '@/lib/socialApi';
 import { Colors } from '@/constants/Colors';
-import { BorderRadius, FontSize, FontWeight, Shadow, Spacing } from '@/constants/AppTheme';
-import type { Comment } from '@/data/mockData';
+import { BorderRadius, FontSize, FontWeight, Spacing } from '@/constants/AppTheme';
+import type { FeedComment, FeedPost } from '@/types/social';
 
-function CommentItem({ comment, nested = false }: { comment: Comment; nested?: boolean }) {
-  const [showReplies, setShowReplies] = useState(false);
+function formatRelativeTime(timestamp: string) {
+  const diffMs = Date.now() - new Date(timestamp).getTime();
+  if (Number.isNaN(diffMs) || diffMs < 0) {
+    return 'Just now';
+  }
+
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) {
+    return 'Just now';
+  }
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function CommentItem({ comment }: { comment: FeedComment }) {
   return (
-    <View style={[styles.commentWrap, nested && styles.nestedComment]}>
-      <Avatar uri={comment.user.avatar} name={comment.user.name} size={36} />
+    <View style={styles.commentWrap}>
+      <Avatar uri={comment.avatarUrl} name={comment.displayName} size={36} />
       <View style={styles.commentBody}>
-        <Text style={styles.commentName}>{comment.user.name}</Text>
-        <Text style={styles.commentTime}>{comment.user.time}</Text>
-        <Text style={styles.commentText}>{comment.content}</Text>
-        {comment.image && (
-          <Image source={{ uri: comment.image }} style={styles.commentImage} resizeMode="cover" />
-        )}
+        <Text style={styles.commentName}>{comment.displayName}</Text>
+        <Text style={styles.commentTime}>{formatRelativeTime(comment.createdAt)}</Text>
+        <Text style={styles.commentText}>{comment.text}</Text>
         <View style={styles.commentActions}>
           <TouchableOpacity style={styles.commentAction}>
             <Text style={styles.commentActionText}>like</Text>
           </TouchableOpacity>
-          <Text style={styles.dot}>•</Text>
-          <TouchableOpacity style={styles.commentAction}>
-            <Ionicons name="thumbs-up-outline" size={13} color={Colors.primary} />
-            <Text style={styles.commentActionCount}>{comment.likes}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.commentAction}>
-            <Ionicons name="heart" size={13} color={Colors.heart} />
-            <Text style={styles.commentActionCount}>{comment.hearts}</Text>
-          </TouchableOpacity>
-          <Text style={styles.dot}>•</Text>
-          <TouchableOpacity>
-            <Text style={styles.commentActionText}>{comment.replies.length} reply</Text>
-          </TouchableOpacity>
         </View>
-        {comment.replies.length > 0 && (
-          <TouchableOpacity onPress={() => setShowReplies(!showReplies)} style={{ marginTop: Spacing.xs }}>
-            <Text style={styles.showReplies}>
-              {showReplies ? 'Hide Replies...' : 'Show Previous Replies...'}
-            </Text>
-          </TouchableOpacity>
-        )}
-        {showReplies && comment.replies.map(r => (
-          <CommentItem key={r.id} comment={r} nested />
-        ))}
       </View>
     </View>
   );
@@ -61,10 +56,62 @@ function CommentItem({ comment, nested = false }: { comment: Comment; nested?: b
 export default function PostDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
-  const post = MOCK_POSTS.find(p => p.id === id) ?? MOCK_POSTS[0];
+  const [post, setPost] = useState<FeedPost | null>(null);
+  const [comments, setComments] = useState<FeedComment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submittingComment, setSubmittingComment] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [sortLabel, setSortLabel] = useState('Most Recent');
+
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    loadPost(String(id));
+  }, [id]);
+
+  async function loadPost(postId: string) {
+    try {
+      setLoading(true);
+      const [postData, commentData] = await Promise.all([
+        fetchPostById(postId),
+        fetchPostComments(postId),
+      ]);
+      setPost(postData);
+      setComments(commentData);
+    } catch {
+      setPost(null);
+      setComments([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const likeAvatars = useMemo(() => comments.slice(0, 5).map((item) => item.avatarUrl), [comments]);
+
+  async function handleSubmitComment() {
+    if (!id || !commentText.trim() || submittingComment) {
+      return;
+    }
+
+    try {
+      setSubmittingComment(true);
+      const result = await createPostComment(String(id), commentText.trim());
+      setComments((prev) => [result.comment, ...prev]);
+      setPost((prev) =>
+        prev
+          ? {
+              ...prev,
+              comments: result.commentsCount,
+            }
+          : prev,
+      );
+      setCommentText('');
+    } finally {
+      setSubmittingComment(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -78,11 +125,25 @@ export default function PostDetailScreen() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          {loading && (
+            <View style={styles.loadingWrap}>
+              <ActivityIndicator size="small" color={Colors.primary} />
+            </View>
+          )}
+
+          {!loading && !post && (
+            <View style={styles.loadingWrap}>
+              <Text style={styles.sortText}>Post not found.</Text>
+            </View>
+          )}
+
+          {!loading && post && (
+            <>
           {/* Likes section */}
           <View style={styles.likesSection}>
             <Text style={styles.sectionLabel}>Like</Text>
             <View style={styles.likeAvatars}>
-              {LIKE_AVATARS.slice(0, 5).map((uri, i) => (
+              {likeAvatars.map((uri, i) => (
                 <Image
                   key={i}
                   source={{ uri }}
@@ -90,7 +151,7 @@ export default function PostDetailScreen() {
                 />
               ))}
               <View style={styles.likeExtraWrap}>
-                <Text style={styles.likeExtra}>+{post.likes > 5 ? `${Math.round((post.likes - 5) / 100) * 100}` : 0}</Text>
+                <Text style={styles.likeExtra}>+{post.likes > 5 ? post.likes - 5 : 0}</Text>
               </View>
             </View>
           </View>
@@ -99,19 +160,22 @@ export default function PostDetailScreen() {
           <View style={styles.commentsHeader}>
             <Text style={styles.sectionLabel}>Comments</Text>
             <TouchableOpacity style={styles.sortBtn}>
-              <Text style={styles.sortText}>{sortLabel}</Text>
+              <Text style={styles.sortText}>Most Recent</Text>
               <Ionicons name="swap-vertical-outline" size={16} color={Colors.text.secondary} />
             </TouchableOpacity>
           </View>
 
           {/* Comment list */}
           <View style={styles.commentsList}>
-            {MOCK_COMMENTS.map(c => (
+            {comments.map(c => (
               <CommentItem key={c.id} comment={c} />
             ))}
+            {comments.length === 0 && <Text style={styles.sortText}>No comments yet.</Text>}
           </View>
 
           <View style={{ height: 80 }} />
+            </>
+          )}
         </ScrollView>
 
         {/* Comment input */}
@@ -132,7 +196,8 @@ export default function PostDetailScreen() {
           />
           <TouchableOpacity
             style={[styles.sendBtn, commentText && styles.sendBtnActive]}
-            disabled={!commentText}
+            disabled={!commentText || submittingComment}
+            onPress={handleSubmitComment}
           >
             <Ionicons
               name="paper-plane"
@@ -173,18 +238,13 @@ const styles = StyleSheet.create({
   sortText: { fontSize: FontSize.sm, color: Colors.text.secondary },
   commentsList: { padding: Spacing.base, gap: Spacing.base },
   commentWrap: { flexDirection: 'row', gap: Spacing.sm },
-  nestedComment: { marginLeft: Spacing.xxl, marginTop: Spacing.sm },
   commentBody: { flex: 1 },
   commentName: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.text.primary },
   commentTime: { fontSize: FontSize.xs, color: Colors.text.muted, marginBottom: Spacing.xs },
   commentText: { fontSize: FontSize.base, color: Colors.text.primary, lineHeight: 21, marginBottom: Spacing.xs },
-  commentImage: { width: '100%', height: 140, borderRadius: BorderRadius.sm, marginBottom: Spacing.xs },
   commentActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flexWrap: 'wrap' },
   commentAction: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   commentActionText: { fontSize: FontSize.xs, color: Colors.text.secondary, fontWeight: FontWeight.medium },
-  commentActionCount: { fontSize: FontSize.xs, color: Colors.text.secondary },
-  dot: { fontSize: FontSize.xs, color: Colors.text.muted },
-  showReplies: { fontSize: FontSize.sm, color: Colors.text.secondary, fontWeight: FontWeight.medium },
   inputBar: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Colors.border,
@@ -200,4 +260,5 @@ const styles = StyleSheet.create({
   },
   sendBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   sendBtnActive: {},
+  loadingWrap: { alignItems: 'center', padding: Spacing.lg },
 });

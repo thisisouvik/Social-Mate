@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../lib/supabase';
+import { Session } from '@supabase/supabase-js';
+import { API_BASE_URL } from '../lib/api';
 
 export interface User {
   id: string;
@@ -26,57 +29,122 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const MOCK_USER: User = {
-  id: '1',
-  name: 'Dave C. Brown',
-  username: '@dave_brown',
-  email: 'dave@example.com',
-  avatar: 'https://i.pravatar.cc/150?img=49',
-  bio: 'Google Certified Ux/Ui Designer',
-  followers: 10000,
-  following: 64,
-  posts: 100,
-  photos: 120,
-};
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isOnboarded, setIsOnboarded] = useState(false);
 
   useEffect(() => {
-    checkAuth();
+    // Check initial session & onboarding
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        syncProfile(session.user, session.access_token);
+      }
+      checkOnboarding();
+    });
+
+    // Listen for auth changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        syncProfile(session.user, session.access_token);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
-  async function checkAuth() {
+  async function checkOnboarding() {
     try {
-      const [userData, onboarded] = await Promise.all([
-        AsyncStorage.getItem('sm_user'),
-        AsyncStorage.getItem('sm_onboarded'),
-      ]);
-      if (userData) setUser(JSON.parse(userData));
+      const onboarded = await AsyncStorage.getItem('sm_onboarded');
       if (onboarded === 'true') setIsOnboarded(true);
     } catch (e) {
-      console.error(e);
+      console.error('Failed to read onboarding state');
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function signIn(_email: string, _password: string) {
-    await AsyncStorage.setItem('sm_user', JSON.stringify(MOCK_USER));
-    setUser(MOCK_USER);
+  async function syncProfile(supabaseUser: any, accessToken: string) {
+    const fallbackUser: User = {
+      id: supabaseUser.id,
+      email: supabaseUser.email,
+      name: supabaseUser.user_metadata?.name || '',
+      username: supabaseUser.email.split('@')[0],
+      avatar: 'https://i.pravatar.cc/150?img=49',
+      bio: '',
+      followers: 0,
+      following: 0,
+      posts: 0,
+      photos: 0,
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users/me/`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        setUser(fallbackUser);
+        return;
+      }
+
+      const profile = await response.json();
+      setUser({
+        id: profile.id || fallbackUser.id,
+        email: profile.email || fallbackUser.email,
+        name: profile.display_name || fallbackUser.name,
+        username: profile.username || fallbackUser.username,
+        avatar: profile.avatar_url || fallbackUser.avatar,
+        bio: profile.bio || '',
+        followers: profile.followers_count || 0,
+        following: profile.following_count || 0,
+        posts: profile.posts_count || 0,
+        photos: profile.posts_count || 0,
+      });
+    } catch (_error) {
+      setUser(fallbackUser);
+    }
   }
 
-  async function signUp(name: string, email: string, _password: string) {
-    const newUser: User = { ...MOCK_USER, name, email };
-    await AsyncStorage.setItem('sm_user', JSON.stringify(newUser));
-    setUser(newUser);
+  async function signIn(email: string, password: string) {
+    setIsLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setIsLoading(false);
+      throw error;
+    }
+    // AuthListener will catch the state change and fire syncProfile
+  }
+
+  async function signUp(name: string, email: string, password: string) {
+    setIsLoading(true);
+    const { error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        data: { name } // Captured cleanly in user_metadata for our SQL schema trigger!
+      }
+    });
+    
+    if (error) {
+      setIsLoading(false);
+      throw error;
+    }
   }
 
   async function signOut() {
-    await AsyncStorage.removeItem('sm_user');
-    setUser(null);
+    await supabase.auth.signOut();
   }
 
   async function completeOnboarding() {

@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Avatar from '@/components/ui/Avatar';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius, FontSize, FontWeight, Shadow, Spacing } from '@/constants/AppTheme';
-import type { Post } from '@/data/mockData';
+import type { FeedPost } from '@/types/social';
 
 interface PostCardProps {
-  post: Post;
-  onLike?: (id: string) => void;
+  post: FeedPost;
+  onLike?: (id: string) => Promise<{ isLiked: boolean; likesCount: number } | void>;
+  onShare?: (id: string) => Promise<{ sharesCount: number } | void>;
   onBookmark?: (id: string) => void;
 }
 
@@ -18,16 +19,56 @@ function formatCount(n: number) {
   return n.toString();
 }
 
-export default function PostCard({ post, onLike, onBookmark }: PostCardProps) {
+export default function PostCard({ post, onLike, onShare, onBookmark }: PostCardProps) {
   const router = useRouter();
   const [liked, setLiked] = useState(post.isLiked);
   const [likes, setLikes] = useState(post.likes);
-  const [bookmarked, setBookmarked] = useState(post.isBookmarked);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [shares, setShares] = useState(post.shares);
 
-  function handleLike() {
-    setLiked(!liked);
-    setLikes(liked ? likes - 1 : likes + 1);
-    onLike?.(post.id);
+  useEffect(() => {
+    setLiked(post.isLiked);
+    setLikes(post.likes);
+    setShares(post.shares);
+  }, [post.id, post.isLiked, post.likes, post.shares]);
+
+  async function handleLike() {
+    const optimisticLiked = !liked;
+    const optimisticLikes = liked ? likes - 1 : likes + 1;
+    setLiked(optimisticLiked);
+    setLikes(optimisticLikes);
+
+    if (!onLike) {
+      return;
+    }
+
+    try {
+      const result = await onLike(post.id);
+      if (result) {
+        setLiked(result.isLiked);
+        setLikes(result.likesCount);
+      }
+    } catch {
+      setLiked(liked);
+      setLikes(likes);
+    }
+  }
+
+  async function handleShare() {
+    setShares((prev) => prev + 1);
+
+    if (!onShare) {
+      return;
+    }
+
+    try {
+      const result = await onShare(post.id);
+      if (result) {
+        setShares(result.sharesCount);
+      }
+    } catch {
+      setShares(post.shares);
+    }
   }
 
   function handleBookmark() {
@@ -39,10 +80,10 @@ export default function PostCard({ post, onLike, onBookmark }: PostCardProps) {
     <View style={styles.card}>
       {/* Header */}
       <View style={styles.header}>
-        <Avatar uri={post.user.avatar} name={post.user.name} size={42} />
+        <Avatar uri={post.authorAvatar} name={post.authorName} size={42} />
         <View style={styles.headerInfo}>
-          <Text style={styles.userName}>{post.user.name}</Text>
-          <Text style={styles.time}>{post.user.time}</Text>
+          <Text style={styles.userName}>{post.authorName}</Text>
+          <Text style={styles.time}>{new Date(post.createdAt).toLocaleString()}</Text>
         </View>
         <TouchableOpacity style={styles.moreBtn}>
           <Ionicons name="ellipsis-horizontal" size={20} color={Colors.text.secondary} />
@@ -53,8 +94,8 @@ export default function PostCard({ post, onLike, onBookmark }: PostCardProps) {
       <Text style={styles.content}>{post.content}</Text>
 
       {/* Image */}
-      {post.image && (
-        <Image source={{ uri: post.image }} style={styles.postImage} resizeMode="cover" />
+      {post.imageUrl && (
+        <Image source={{ uri: post.imageUrl }} style={styles.postImage} resizeMode="cover" />
       )}
 
       {/* Actions */}
@@ -76,8 +117,9 @@ export default function PostCard({ post, onLike, onBookmark }: PostCardProps) {
             <Text style={styles.actionText}>{formatCount(post.comments)}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.action}>
+          <TouchableOpacity style={styles.action} onPress={handleShare}>
             <Ionicons name="arrow-redo-outline" size={20} color={Colors.text.secondary} />
+            <Text style={styles.actionText}>{formatCount(shares)}</Text>
           </TouchableOpacity>
         </View>
 

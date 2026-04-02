@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, Image,
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { MOCK_GROUPS } from '@/data/mockData';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius, FontSize, FontWeight, Shadow, Spacing } from '@/constants/AppTheme';
+
+type Group = {
+  id: string;
+  name: string;
+  members: number;
+  isJoined: boolean;
+  category: string;
+};
 
 function formatMembers(n: number) {
   if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
@@ -14,7 +21,7 @@ function formatMembers(n: number) {
 }
 
 export default function GroupsScreen() {
-  const [groups, setGroups] = useState(MOCK_GROUPS);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [activeTab, setActiveTab] = useState<'discover' | 'joined'>('discover');
 
   const displayed = activeTab === 'joined'
@@ -56,7 +63,6 @@ export default function GroupsScreen() {
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Image source={{ uri: item.cover }} style={styles.cover} />
             <View style={styles.cardContent}>
               <View style={styles.categoryBadge}>
                 <Text style={styles.categoryText}>{item.category}</Text>
@@ -81,7 +87,7 @@ export default function GroupsScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="people-circle-outline" size={60} color={Colors.text.muted} />
-            <Text style={styles.emptyText}>No groups yet</Text>
+            <Text style={styles.emptyText}>No group data yet.</Text>
           </View>
         }
       />
@@ -114,7 +120,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background, borderRadius: BorderRadius.lg,
     overflow: 'hidden', ...Shadow.sm,
   },
-  cover: { width: '100%', height: 110 },
   cardContent: { padding: Spacing.base },
   categoryBadge: {
     backgroundColor: Colors.primaryLight, borderRadius: BorderRadius.xs,

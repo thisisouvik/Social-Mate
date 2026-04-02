@@ -3,11 +3,11 @@ import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'rea
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
-import { FontSize, FontWeight, Spacing, BorderRadius } from '@/constants/AppTheme';
-import type { Story } from '@/data/mockData';
+import { FontSize, FontWeight, Spacing } from '@/constants/AppTheme';
+import type { StoryItem } from '@/types/social';
 
 interface StoryBarProps {
-  stories: Story[];
+  stories: StoryItem[];
 }
 
 export default function StoryBar({ stories }: StoryBarProps) {
