@@ -1,35 +1,80 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/constants/Colors';
+import { Shadow } from '@/constants/AppTheme';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+function TabIcon({ name, focused }: { name: IconName; focused: boolean }) {
+  return (
+    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+      <Ionicons name={name} size={22} color={focused ? Colors.tab.active : Colors.tab.inactive} />
+    </View>
+  );
+}
 
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarShowLabel: false,
+        tabBarStyle: styles.tabBar,
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'home' : 'home-outline'} focused={focused} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="add-friend"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'person-add' : 'person-add-outline'} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="jobs"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'briefcase' : 'briefcase-outline'} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="groups"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'people' : 'people-outline'} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon name={focused ? 'person-circle' : 'person-circle-outline'} focused={focused} />,
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: Colors.tab.background,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    height: Platform.OS === 'ios' ? 84 : 64,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+    paddingTop: 8,
+    ...Shadow.md,
+  },
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapActive: {
+    backgroundColor: Colors.tab.activeBg,
+  },
+});
