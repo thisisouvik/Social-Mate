@@ -3,6 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { API_BASE_URL } from '../lib/api';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export interface User {
   id: string;
@@ -23,6 +27,7 @@ interface AuthContextType {
   isOnboarded: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (name: string, email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
 }
@@ -147,13 +152,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   }
 
+  async function signInWithGoogle() {
+    const redirectTo = Linking.createURL('/auth/callback');
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data?.url) {
+      throw new Error('Could not initialize Google login.');
+    }
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+    if (result.type !== 'success' || !result.url) {
+      throw new Error('Google sign-in was cancelled.');
+    }
+
+    const urlHash = result.url.includes('#') ? result.url.split('#')[1] : '';
+    const hashParams = new URLSearchParams(urlHash);
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+
+    if (!accessToken || !refreshToken) {
+      throw new Error('Google login did not return session tokens.');
+    }
+
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (sessionError) {
+      throw sessionError;
+    }
+  }
+
   async function completeOnboarding() {
     await AsyncStorage.setItem('sm_onboarded', 'true');
     setIsOnboarded(true);
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isOnboarded, signIn, signUp, signOut, completeOnboarding }}>
+    <AuthContext.Provider value={{ user, isLoading, isOnboarded, signIn, signUp, signInWithGoogle, signOut, completeOnboarding }}>
       {children}
     </AuthContext.Provider>
   );

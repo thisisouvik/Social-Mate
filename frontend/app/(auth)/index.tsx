@@ -14,22 +14,22 @@ import { BorderRadius, FontSize, FontWeight, Spacing, Shadow } from '@/constants
 // ── SSO Buttons using Ionicons ────────────────────────────────────────────────
 import { Ionicons } from '@expo/vector-icons';
 
-function SSOButton({ provider, onPress }: { provider: 'google' | 'microsoft'; onPress: () => void }) {
+function SSOButton({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.ssoBtn} onPress={onPress} activeOpacity={0.8}>
       <Ionicons
-        name={provider === 'google' ? 'logo-google' : 'logo-microsoft'}
+        name="logo-google"
         size={20}
-        color={provider === 'google' ? '#DB4437' : '#00A4EF'}
+        color="#DB4437"
       />
-      <Text style={styles.ssoBtnText}>{provider === 'google' ? 'Google' : 'Microsoft'}</Text>
+      <Text style={styles.ssoBtnText}>Google</Text>
     </TouchableOpacity>
   );
 }
 
 // ── Sign In Form ──────────────────────────────────────────────────────────────
 function SignInForm({ onSwitch }: { onSwitch: () => void }) {
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,8 +41,20 @@ function SignInForm({ onSwitch }: { onSwitch: () => void }) {
     try {
       await signIn(email, password);
       router.replace('/(tabs)');
-    } catch {
-      Alert.alert('Error', 'Invalid credentials');
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Google sign-in failed');
     } finally {
       setLoading(false);
     }
@@ -80,8 +92,7 @@ function SignInForm({ onSwitch }: { onSwitch: () => void }) {
       </View>
 
       <View style={styles.ssoRow}>
-        <SSOButton provider="google" onPress={() => handleLogin()} />
-        <SSOButton provider="microsoft" onPress={() => handleLogin()} />
+        <SSOButton onPress={handleGoogleLogin} />
       </View>
 
       <TouchableOpacity onPress={onSwitch} style={styles.switchRow}>
@@ -94,7 +105,7 @@ function SignInForm({ onSwitch }: { onSwitch: () => void }) {
 
 // ── Sign Up Form ──────────────────────────────────────────────────────────────
 function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -109,8 +120,20 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     try {
       await signUp(name, email, password);
       router.replace('/(tabs)');
-    } catch {
-      Alert.alert('Error', 'Something went wrong');
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGoogleSignup() {
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Google sign-in failed');
     } finally {
       setLoading(false);
     }
@@ -134,8 +157,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
       </View>
 
       <View style={styles.ssoRow}>
-        <SSOButton provider="google" onPress={() => handleJoin()} />
-        <SSOButton provider="microsoft" onPress={() => handleJoin()} />
+        <SSOButton onPress={handleGoogleSignup} />
       </View>
 
       <View style={styles.tosRow}>
