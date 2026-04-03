@@ -30,6 +30,13 @@ class PostListCreateView(generics.ListCreateAPIView):
 		context['request'] = self.request
 		return context
 
+	def create(self, request, *args, **kwargs):
+		serializer = self.get_serializer(data=request.data)
+		serializer.is_valid(raise_exception=True)
+		post = serializer.save()
+		response_serializer = PostSerializer(post, context=self.get_serializer_context())
+		return Response(response_serializer.data, status=201)
+
 
 class PostDetailView(generics.RetrieveAPIView):
 	permission_classes = [IsAuthenticated]
