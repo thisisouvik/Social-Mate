@@ -46,14 +46,14 @@ export default function GroupsScreen() {
     loadData();
   };
 
-  const handleToggleJoin = async (id: number, currentlyJoined: boolean) => {
+  const handleToggleJoin = async (id: string, currentlyJoined: boolean) => {
     // Optimistic update
     setCommunities(prev => prev.map(c => {
       if (c.id === id) {
         return { 
           ...c, 
-          is_joined: !currentlyJoined,
-          members_count: currentlyJoined ? c.members_count - 1 : c.members_count + 1 
+          isJoined: !currentlyJoined,
+          membersCount: currentlyJoined ? c.membersCount - 1 : c.membersCount + 1 
         };
       }
       return c;
@@ -80,10 +80,10 @@ export default function GroupsScreen() {
 
     setCreating(true);
     try {
-      const newGroup = await createCommunity({
-        name: newGroupName.trim(),
-        description: newGroupDesc.trim() || undefined
-      });
+      const newGroup = await createCommunity(
+        newGroupName.trim(),
+        newGroupDesc.trim()
+      );
       
       setModalVisible(false);
       setNewGroupName('');
@@ -109,15 +109,15 @@ export default function GroupsScreen() {
         )}
         <View style={styles.memberRow}>
           <Ionicons name="people-outline" size={14} color={Colors.text.muted} />
-          <Text style={styles.memberText}>{item.members_count} members</Text>
+          <Text style={styles.memberText}>{item.membersCount} members</Text>
         </View>
         <TouchableOpacity
-          style={[styles.joinBtn, item.is_joined && styles.joinBtnActive]}
-          onPress={() => handleToggleJoin(item.id, !!item.is_joined)}
+          style={[styles.joinBtn, item.isJoined && styles.joinBtnActive]}
+          onPress={() => handleToggleJoin(item.id, !!item.isJoined)}
           activeOpacity={0.85}
         >
-          <Text style={[styles.joinBtnText, item.is_joined && styles.joinBtnTextActive]}>
-            {item.is_joined ? '✓ Joined' : 'Join Group'}
+          <Text style={[styles.joinBtnText, item.isJoined && styles.joinBtnTextActive]}>
+            {item.isJoined ? '✓ Joined' : 'Join Group'}
           </Text>
         </TouchableOpacity>
       </View>

@@ -133,7 +133,7 @@ function EditProfileScreen() {
       <ScrollView style={styles.body} contentContainerStyle={styles.content}>
         <View style={styles.avatarWrap}>
           <View style={styles.avatarBorder}>
-            <Avatar uri={avatarUri} name={name} size={100} />
+            <Avatar uri={avatarUri || undefined} name={name} size={100} />    
             <TouchableOpacity style={styles.avatarEditBtn} onPress={handlePickImage} disabled={saving}>
               <Ionicons name="camera" size={18} color="#FFFFFF" />
             </TouchableOpacity>

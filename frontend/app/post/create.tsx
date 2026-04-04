@@ -78,7 +78,11 @@ export default function CreatePostScreen() {
   }
 
   function handleClose() {
-    router.replace('/(tabs)/index');
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
   }
 
   async function handlePost() {
@@ -89,7 +93,13 @@ export default function CreatePostScreen() {
     try {
       setIsSubmitting(true);
       await createPost(content.trim());
-      router.replace('/(tabs)/index');
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/');
+      }
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsSubmitting(false);
     }

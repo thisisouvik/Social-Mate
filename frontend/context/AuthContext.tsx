@@ -43,7 +43,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isOnboarded, setIsOnboarded] = useState(false);
 
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const onboarded = await AsyncStorage.getItem('sm_onboarded');
       if (onboarded === 'true') setIsOnboarded(true);
     } catch (e) {
-      console.error('Failed to read onboarding state');
+      console.error('Failed to read onboarding state', e);
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         posts: profile.posts_count || 0,
         photos: profile.posts_count || 0,
       });
-    } catch (_error) {
+    } catch {
       setUser(fallbackUser);
     }
   }
