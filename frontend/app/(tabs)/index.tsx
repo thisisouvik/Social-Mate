@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Text, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import Logo from '@/components/shared/Logo';
 import CreatePostBar from '@/components/home/CreatePostBar';
 import StoryBar from '@/components/home/StoryBar';
@@ -13,6 +14,7 @@ import { FontSize, Spacing } from '@/constants/AppTheme';
 import type { FeedPost } from '@/types/social';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,15 +88,9 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <Logo size="sm" />
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.headerBtn}>
-            <Ionicons name="search-outline" size={24} color={Colors.text.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push('/(tabs)/notifications')}>
             <Ionicons name="notifications-outline" size={24} color={Colors.text.primary} />
             <View style={styles.badge} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn}>
-            <Ionicons name="paper-plane-outline" size={24} color={Colors.text.primary} />
           </TouchableOpacity>
         </View>
       </View>

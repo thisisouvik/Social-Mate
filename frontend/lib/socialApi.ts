@@ -174,6 +174,50 @@ export async function toggleFollow(userId: string) {
   });
 }
 
+interface BackendNotification {
+  id: string;
+  recipient: string;
+  actor_id: string;
+  actor_username: string;
+  actor_display_name: string;
+  actor_avatar_url: string | null;
+  post: string | null;
+  notification_type: 'like' | 'comment' | 'share' | 'follow' | 'new_post';
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+import type { SocialNotification } from '@/types/social';
+
+export async function fetchNotifications(): Promise<SocialNotification[]> {
+  const data = await apiRequest<BackendNotification[]>('/api/notifications/');
+  return data.map((n) => ({
+    id: n.id,
+    actorId: n.actor_id,
+    actorUsername: n.actor_username,
+    actorDisplayName: n.actor_display_name || n.actor_username,
+    actorAvatar: n.actor_avatar_url || defaultAvatar(n.actor_id),
+    postId: n.post,
+    type: n.notification_type,
+    message: n.message,
+    isRead: n.is_read,
+    createdAt: n.created_at,
+  }));
+}
+
+export async function markNotificationRead(notificationId: string) {
+  return apiRequest<{ status: string }>(`/api/notifications/${notificationId}/read/`, {
+    method: 'POST',
+  });
+}
+
+export async function markAllNotificationsRead() {
+  return apiRequest<{ status: string }>('/api/notifications/read-all/', {
+    method: 'POST',
+  });
+}
+
 export function buildStoriesFromPosts(posts: FeedPost[], currentUserName?: string, currentUserAvatar?: string): StoryItem[] {
   const stories: StoryItem[] = [];
 

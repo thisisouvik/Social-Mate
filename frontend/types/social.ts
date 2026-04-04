@@ -38,3 +38,18 @@ export interface StoryItem {
   hasStory: boolean;
   isOwn?: boolean;
 }
+
+export type NotificationType = 'like' | 'comment' | 'share' | 'follow' | 'new_post';
+
+export interface SocialNotification {
+  id: string;
+  actorId: string;
+  actorUsername: string;
+  actorDisplayName: string;
+  actorAvatar: string;
+  postId?: string | null;
+  type: NotificationType;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
