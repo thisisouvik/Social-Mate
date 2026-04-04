@@ -26,4 +26,6 @@ class MeView(APIView):
 		if serializer.is_valid():
 			serializer.save()
 			return Response(serializer.data)
-		return Response(serializer.errors, status=400)
+		return Response(serializer.errors, status=400)                
+        def put(self, request):
+                return self.patch(request)

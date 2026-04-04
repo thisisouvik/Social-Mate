@@ -3,22 +3,66 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/context/AuthContext';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius, FontSize, FontWeight, Spacing } from '@/constants/AppTheme';
 import Avatar from '@/components/ui/Avatar';
 import { supabase } from '@/lib/supabase';
 import { API_BASE_URL } from '@/lib/api';
+import * as FileSystem from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
 
 function EditProfileScreen() {
   const router = useRouter();
-  const { user, signIn, syncProfile } = useAuth() as any;
+  const { user, syncProfile } = useAuth() as any;
   
   const [name, setName] = useState(user?.name || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [gender, setGender] = useState(user?.gender || '');
   const [website, setWebsite] = useState(user?.website || '');
+  const [avatarUri, setAvatarUri] = useState<string | null>(user?.avatar || null);
   const [saving, setSaving] = useState(false);
+
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setAvatarUri(result.assets[0].uri);
+    }
+  };
+
+  const uploadAvatarToSupabase = async (uri: string): Promise<string | null> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No session');
+
+      const fileName = `avatar_${Date.now()}.jpg`;
+      const filePath = `${session.user.id}/${fileName}`;
+      
+      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+      
+      const { error } = await supabase.storage
+        .from('posts_media')
+        .upload(filePath, decode(base64), { 
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+
+      if (error) throw error;
+      
+      const { data: publicUrlData } = supabase.storage.from('posts_media').getPublicUrl(filePath);
+      return publicUrlData.publicUrl;
+    } catch (e) {
+      console.error('Upload Error:', e);
+      return null;
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -26,6 +70,15 @@ function EditProfileScreen() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No session found');
+
+      // Check if avatar has changed locally
+      let finalAvatarUrl = user.avatar;
+      if (avatarUri && avatarUri !== user.avatar && !avatarUri.startsWith('http')) {
+         const newUrl = await uploadAvatarToSupabase(avatarUri);
+         if (newUrl) {
+            finalAvatarUrl = newUrl;
+         }
+      }
 
       // Update via Django Backend
       const response = await fetch(`${API_BASE_URL}/api/users/me/`, {
@@ -38,6 +91,7 @@ function EditProfileScreen() {
           display_name: name,
           bio,
           gender,
+          avatar_url: finalAvatarUrl,
           website: website ? website : null,
         }),
       });
@@ -79,8 +133,8 @@ function EditProfileScreen() {
       <ScrollView style={styles.body} contentContainerStyle={styles.content}>
         <View style={styles.avatarWrap}>
           <View style={styles.avatarBorder}>
-            <Avatar uri={user?.avatar} name={user?.name} size={100} />
-            <TouchableOpacity style={styles.avatarEditBtn}>
+            <Avatar uri={avatarUri} name={name} size={100} />
+            <TouchableOpacity style={styles.avatarEditBtn} onPress={handlePickImage} disabled={saving}>
               <Ionicons name="camera" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
