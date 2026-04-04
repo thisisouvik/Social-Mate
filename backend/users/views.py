@@ -19,3 +19,11 @@ class MeView(APIView):
 	def get(self, request):
 		serializer = UserMeSerializer(request.user)
 		return Response(serializer.data)
+
+	def patch(self, request):
+		# We only allow updating specific fields
+		serializer = UserMeSerializer(request.user, data=request.data, partial=True)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data)
+		return Response(serializer.errors, status=400)

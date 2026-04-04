@@ -19,6 +19,8 @@ export interface User {
   email: string;
   avatar: string;
   bio: string;
+  gender: string;
+  website: string;
   followers: number;
   following: number;
   posts: number;
@@ -34,6 +36,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
+  syncProfile: (supabaseUser: any, accessToken: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -88,6 +91,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       username: supabaseUser.email.split('@')[0],
       avatar: 'https://i.pravatar.cc/150?img=49',
       bio: '',
+      gender: '',
+      website: '',
       followers: 0,
       following: 0,
       posts: 0,
@@ -116,6 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         username: profile.username || fallbackUser.username,
         avatar: profile.avatar_url || fallbackUser.avatar,
         bio: profile.bio || '',
+        gender: profile.gender || '',
+        website: profile.website || '',
         followers: profile.followers_count || 0,
         following: profile.following_count || 0,
         posts: profile.posts_count || 0,
@@ -213,7 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isOnboarded, signIn, signUp, signInWithGoogle, signOut, completeOnboarding }}>
+    <AuthContext.Provider value={{ user, isLoading, isOnboarded, signIn, signUp, signInWithGoogle, signOut, completeOnboarding, syncProfile }}>
       {children}
     </AuthContext.Provider>
   );

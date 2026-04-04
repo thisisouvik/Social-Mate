@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, Image, ScrollView,
+  View, Text, StyleSheet, ScrollView,
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import Avatar from '@/components/ui/Avatar';
 import PostCard from '@/components/home/PostCard';
 import { useAuth } from '@/context/AuthContext';
@@ -24,7 +24,8 @@ function StatBox({ label, value }: { label: string; value: string | number }) {
 }
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'posts' | 'details'>('posts');
   const [myPosts, setMyPosts] = useState<FeedPost[]>([]);
 
@@ -68,52 +69,40 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Cover + Avatar */}
-        <View style={styles.coverWrap}>
-          <Image
-            source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80' }}
-            style={styles.coverImage}
-          />
-          <LinearGradient
-            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)'] as [string, string]}
-            style={StyleSheet.absoluteFill}
-          />
-          {/* Settings icon */}
-          <TouchableOpacity style={styles.settingsBtn} onPress={signOut}>
-            <Ionicons name="log-out-outline" size={22} color={Colors.text.white} />
-          </TouchableOpacity>
-        </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{user?.name ?? 'Profile'}</Text>
+        <TouchableOpacity style={styles.settingsBtn} onPress={() => router.push('/settings')}>
+          <Ionicons name="settings-outline" size={24} color={Colors.text.primary} />
+        </TouchableOpacity>
+      </View>
 
-        {/* Avatar on cover */}
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Avatar */}
         <View style={styles.avatarWrap}>
           <View style={styles.avatarBorder}>
-            <Avatar uri={user?.avatar} name={user?.name} size={88} />
+            <Avatar uri={user?.avatar} name={user?.name} size={96} />
+            <TouchableOpacity style={styles.avatarEditBtn}>
+              <Ionicons name="pencil" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Name & Bio */}
+        {/* Name */}
         <View style={styles.nameSection}>
           <Text style={styles.name}>{user?.name ?? 'Social Mate User'}</Text>
-          <Text style={styles.username}>{user?.username ?? '@username'}</Text>
-          <Text style={styles.bio}>{user?.bio ?? 'No bio yet'}</Text>
         </View>
 
-        {/* Edit + Settings */}
+        {/* Edit Row */}
         <View style={styles.editRow}>
-          <TouchableOpacity style={styles.editBtn}>
+          <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/edit-profile')}>
             <Text style={styles.editBtnText}>EDIT PROFILE</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.gearBtn}>
-            <Ionicons name="settings-outline" size={20} color={Colors.text.secondary} />
           </TouchableOpacity>
         </View>
 
         {/* Stats */}
         <View style={styles.statsRow}>
           <StatBox label="Post" value={user?.posts ?? 0} />
-          <View style={styles.statDivider} />
-          <StatBox label="Photos" value={user?.photos ?? 0} />
           <View style={styles.statDivider} />
           <StatBox label="Followers" value={user?.followers ?? 0} />
           <View style={styles.statDivider} />
@@ -148,10 +137,9 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={styles.detailsSection}>
-            <DetailItem icon="mail-outline" label="Email" value={user?.email ?? 'N/A'} />
-            <DetailItem icon="person-outline" label="Username" value={user?.username ?? 'N/A'} />
-            <DetailItem icon="briefcase-outline" label="Occupation" value={user?.bio ?? 'N/A'} />
-            <DetailItem icon="people-outline" label="Followers" value={`${user?.followers ?? 0} people`} />
+            <DetailItem icon="person-outline" label="Full Name" value={user?.name ?? 'N/A'} />
+            <DetailItem icon="male-female-outline" label="Gender" value={user?.gender || 'Not specified'} />
+            <DetailItem icon="globe-outline" label="Website" value={user?.website || 'No website added'} />
           </View>
         )}
 
@@ -177,24 +165,47 @@ function DetailItem({ icon, label, value }: { icon: React.ComponentProps<typeof 
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F5F7FA' },
-  coverWrap: { height: 200, position: 'relative' },
-  coverImage: { width: '100%', height: '100%' },
-  settingsBtn: {
-    position: 'absolute', top: Spacing.base, right: Spacing.base,
-    width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.4)',
-    alignItems: 'center', justifyContent: 'center',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.background,
+    ...Shadow.sm,
+    zIndex: 10,
   },
-  avatarWrap: { alignItems: 'center', marginTop: -50 },
+  headerTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: Colors.text.primary,
+  },
+  settingsBtn: {
+    padding: Spacing.xs,
+  },
+  avatarWrap: { alignItems: 'center', marginTop: Spacing.xl },
   avatarBorder: {
-    width: 96, height: 96, borderRadius: 48,
+    width: 104, height: 104, borderRadius: 52,
     borderWidth: 3.5, borderColor: Colors.primary,
     backgroundColor: Colors.background,
     alignItems: 'center', justifyContent: 'center',
+    position: 'relative',
+  },
+  avatarEditBtn: {
+    position: 'absolute',
+    bottom: 0,
+    right: -4,
+    backgroundColor: Colors.primary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.background,
   },
   nameSection: { alignItems: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.base },
   name: { fontSize: FontSize.xl, fontWeight: FontWeight.bold, color: Colors.text.primary },
-  username: { fontSize: FontSize.base, color: Colors.text.secondary, marginTop: 2 },
-  bio: { fontSize: FontSize.sm, color: Colors.text.secondary, marginTop: 4, textAlign: 'center' },
   editRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: Spacing.sm, marginTop: Spacing.base, paddingHorizontal: Spacing.xxl,
@@ -204,13 +215,9 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md, paddingVertical: Spacing.sm, alignItems: 'center',
   },
   editBtnText: { fontSize: FontSize.sm, fontWeight: FontWeight.bold, color: Colors.text.primary, letterSpacing: 1 },
-  gearBtn: {
-    width: 44, height: 44, borderRadius: BorderRadius.md,
-    borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center',
-  },
   statsRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
-    backgroundColor: Colors.background, marginTop: Spacing.base,
+    backgroundColor: Colors.background, marginTop: Spacing.lg,
     marginHorizontal: Spacing.base, borderRadius: BorderRadius.lg,
     paddingVertical: Spacing.base, ...Shadow.sm,
   },

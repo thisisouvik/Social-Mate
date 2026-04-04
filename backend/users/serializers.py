@@ -7,6 +7,7 @@ class UserMeSerializer(serializers.ModelSerializer):
     followers_count = serializers.SerializerMethodField()
     following_count = serializers.SerializerMethodField()
     posts_count = serializers.SerializerMethodField()
+    website = serializers.URLField(allow_blank=True, allow_null=True, required=False)
 
     class Meta:
         model = User
@@ -17,6 +18,8 @@ class UserMeSerializer(serializers.ModelSerializer):
             'display_name',
             'bio',
             'avatar_url',
+            'gender',
+            'website',
             'followers_count',
             'following_count',
             'posts_count',
