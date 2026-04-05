@@ -188,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ? Linking.createURL('/auth/callback')
       : isExpoGo
         ? Linking.createURL('/auth/callback')
-        : Linking.createURL('/auth/callback', { scheme: 'frontend' });
+        : Linking.createURL('/auth/callback', { scheme: 'socialmate' });
 
     const redirectTo = explicitOAuthRedirect || fallbackRedirect;
 

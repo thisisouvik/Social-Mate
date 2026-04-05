@@ -91,22 +91,6 @@ export default function UserProfileScreen() {
           {profile.bio || "No bio provided."}
         </Text>
       </View>
-
-      {/* Work Experience Card */}
-      <View style={styles.boxCard}>
-        <View style={styles.boxCardHeader}>
-          <Ionicons name="briefcase-outline" size={18} color={Colors.text.secondary} />
-          <Text style={styles.boxCardTitle}>Work Experience</Text>
-        </View>
-        <View style={styles.bulletItem}>
-          <View style={styles.bullet} />
-          <Text style={styles.boxCardText}>Ux/Ui Designer At Google</Text>
-        </View>
-        <View style={styles.bulletItem}>
-          <View style={styles.bullet} />
-          <Text style={styles.boxCardText}>Graphic Designer At Apple</Text>
-        </View>
-      </View>
     </View>
   );
 
@@ -114,10 +98,10 @@ export default function UserProfileScreen() {
     <View style={styles.safe}>
       {/* Top Header overlay */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => { if(router.canGoBack()) router.back(); else router.replace('/(tabs)/search');}}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => { if(router.canGoBack()) router.back(); else router.replace('/(tabs)/search'); }}>
           <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
         </TouchableOpacity>
-        <View style={{flex:1}}/>
+        <View style={{ flex: 1 }} />
         <TouchableOpacity style={styles.iconBtn}>
           <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text.primary} />
         </TouchableOpacity>
