@@ -28,12 +28,26 @@ export default function HomeScreen() {
   const loadStories = useCallback(async () => {
     try {
       const raw = await fetchStories();
-      // Map backend story format to StoryItem, put current user first
-      const mapped: StoryItem[] = raw.map((s: any) => ({
+
+      // Check if the current user already has a story
+      const ownStories = raw.filter((s: any) => s.user_id === user?.id);
+      const otherStories = raw.filter((s: any) => s.user_id !== user?.id);
+
+      // Deduplicate other users — keep only the latest story per user
+      const seenUsers = new Set<string>();
+      const deduped = otherStories.filter((s: any) => {
+        if (seenUsers.has(s.user_id)) return false;
+        seenUsers.add(s.user_id);
+        return true;
+      });
+
+      const mapped: StoryItem[] = deduped.map((s: any) => ({
         id: s.id,
         user: s.user_username || 'User',
         avatar: s.user_avatar_url || '',
         hasStory: true,
+        storyImageUrl: s.image_url || '',
+        storagePath: s.storage_path || '',
       }));
 
       // Always prepend the current user's "Your Story" slot
@@ -41,8 +55,10 @@ export default function HomeScreen() {
         id: 'own-story',
         user: user?.name || 'You',
         avatar: user?.avatar || '',
-        hasStory: false,
+        hasStory: ownStories.length > 0,
         isOwn: true,
+        storyImageUrl: ownStories[0]?.image_url || '',
+        storagePath: ownStories[0]?.storage_path || '',
       };
       setStories([ownStory, ...mapped]);
     } catch {
@@ -55,7 +71,7 @@ export default function HomeScreen() {
         isOwn: true,
       }]);
     }
-  }, [user?.name, user?.avatar]);
+  }, [user?.name, user?.avatar, user?.id]);
 
   async function loadFeed() {
     try {

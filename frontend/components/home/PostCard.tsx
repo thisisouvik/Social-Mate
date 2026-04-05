@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, Image, TouchableOpacity, StyleSheet, Alert,
-  ScrollView, Modal, Dimensions, Pressable,
+  ScrollView, Modal, Dimensions, Pressable, Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -179,13 +179,34 @@ export default function PostCard({ post, onLike, onShare, onBookmark }: PostCard
   }
 
   async function handleShare() {
-    setShares((prev) => prev + 1);
-    if (!onShare) return;
     try {
-      const result = await onShare(post.id);
-      if (result) setShares(result.sharesCount);
-    } catch {
-      setShares(post.shares);
+      // Build a shareable message
+      const shareMessage = post.content
+        ? `${post.authorName}: "${post.content.slice(0, 200)}${post.content.length > 200 ? '...' : ''}" — shared via Social Mate`
+        : `Check out ${post.authorName}'s post on Social Mate!`;
+
+      const result = await Share.share({
+        message: shareMessage,
+        // When deployed, replace with your actual deep link URL
+        url: `https://social-mate.app/post/${post.id}`,
+      });
+
+      // Only count the share if the user actually shared (not dismissed)
+      if (result.action === Share.sharedAction) {
+        setShares((prev) => prev + 1);
+        if (onShare) {
+          try {
+            const apiResult = await onShare(post.id);
+            if (apiResult) setShares(apiResult.sharesCount);
+          } catch {
+            // Backend share count update failed silently — share already happened
+          }
+        }
+      }
+    } catch (error: any) {
+      if (error?.message !== 'User did not share') {
+        console.warn('Share error:', error);
+      }
     }
   }
 

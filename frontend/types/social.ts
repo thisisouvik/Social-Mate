@@ -39,6 +39,8 @@ export interface StoryItem {
   avatar: string;
   hasStory: boolean;
   isOwn?: boolean;
+  storyImageUrl?: string;
+  storagePath?: string;
 }
 
 export type NotificationType = 'like' | 'comment' | 'share' | 'follow' | 'new_post';
