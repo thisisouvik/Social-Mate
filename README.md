@@ -193,7 +193,7 @@ npm run start
   <br />
   <h2>🙏 Thank You</h2>
   <p>
-    <i>This project was built with Love and Respect.<br>Dedicated to the teachers, guides, and documentations who generously illuminate the path of knowledge.</i>
+    <i>This project was built with Love and Respect.<br>Dedicated to the teachers, guides, and friends who generously illuminate the path of knowledge.</i>
   </p>
   <h3>Peace! ✌️✨</h3>
   <br />
