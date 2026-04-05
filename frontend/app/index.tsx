@@ -17,7 +17,7 @@ export default function Index() {
     } else {
       router.replace('/(tabs)');
     }
-  }, [isLoading, user, isOnboarded]);
+  }, [isLoading, user, isOnboarded, router]);
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.gradientStart }}>

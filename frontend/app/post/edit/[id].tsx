@@ -1,9 +1,9 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchPostDetails, updatePost } from '@/lib/socialApi';
+import { fetchPostById, updatePost } from '@/lib/socialApi';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius, FontSize, FontWeight, Spacing } from '@/constants/AppTheme';
 
@@ -17,9 +17,9 @@ export default function EditPostScreen() {
   useEffect(() => {
     async function load() {
       try {
-        const d = await fetchPostDetails(id as string);
+        const d = await fetchPostById(id as string);
         setContent(d.content);
-      } catch (e) {
+      } catch {
         Alert.alert('Error', 'Failed to load post');
         if (router.canGoBack()) router.back();
       } finally {
@@ -27,7 +27,7 @@ export default function EditPostScreen() {
       }
     }
     load();
-  }, [id]);
+  }, [id, router]);
 
   async function handleSave() {
     if (!content.trim()) {
@@ -39,7 +39,7 @@ export default function EditPostScreen() {
       await updatePost(id as string, content);
       if (router.canGoBack()) router.back();
       else router.replace('/(tabs)');
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'Failed to update post');
     } finally {
       setSubmitting(false);

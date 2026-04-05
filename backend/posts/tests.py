@@ -13,7 +13,7 @@ from posts.models import Community, CommunityMembership, Post, PostUploadIntent
 User = get_user_model()
 
 
-@override_settings(SUPABASE_URL='https://example.supabase.co')
+@override_settings(SUPABASE_URL='https://example.supabase.co', SECURE_SSL_REDIRECT=False)
 class PostUploadAndCommunityTests(APITestCase):
 	def setUp(self):
 		self.user = User.objects.create_user(id=uuid.uuid4(), username='alice', email='alice@example.com')

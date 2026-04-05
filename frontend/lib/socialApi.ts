@@ -1,6 +1,6 @@
 import { API_BASE_URL } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
-import type { FeedComment, FeedPost, FollowUser, StoryItem } from '@/types/social';
+import type { FeedComment, FeedPost, FollowUser, StoryItem, SocialNotification, Community } from '@/types/social';
 
 interface BackendPostImage {
   image_url: string;
@@ -200,7 +200,7 @@ interface BackendNotification {
   created_at: string;
 }
 
-import type { SocialNotification } from '@/types/social';
+
 
 export async function fetchNotifications(): Promise<SocialNotification[]> {
   const data = await apiRequest<BackendNotification[]>('/api/notifications/');
@@ -230,7 +230,7 @@ export async function markAllNotificationsRead() {
   });
 }
 
-import type { Community } from '@/types/social';
+
 
 interface BackendCommunity {
   id: string;
@@ -339,37 +339,44 @@ export function buildPeopleSuggestionsFromFollows(
     }))
     .sort((a, b) => Number(a.isFollowing) - Number(b.isFollowing));
 }
+interface BookmarkResponse {
+  status: string;
+  bookmarked: boolean;
+  id?: number;
+  post?: BackendPost;
+}
+
 export async function togglePostBookmark(postId: string) {
-  return apiRequest<{ status: string; bookmarked: boolean; id?: number; post?: BackendPost }>(/api/bookmarks/, {
+  return apiRequest<BookmarkResponse>('/api/bookmarks/', {
     method: 'POST',
     body: JSON.stringify({ post_id: postId })
   });
 }
 
 export async function fetchBookmarks(): Promise<BackendPost[]> {
-  const result: any[] = await apiRequest(/api/bookmarks/);
+  const result: any[] = await apiRequest('/api/bookmarks/');
   return result.map(b => b.post);
 }
 
 export async function fetchStories(): Promise<any[]> {
-  return apiRequest(/api/stories/);
+  return apiRequest('/api/stories/');
 }
 
 export async function uploadStory(data: { text?: string, image_url?: string }): Promise<any> {
-  return apiRequest(/api/stories/, {
+  return apiRequest('/api/stories/', {
     method: 'POST',
     body: JSON.stringify(data)
   });
 }
 export async function updatePost(postId: string, text: string): Promise<BackendPost> {
-  return apiRequest(/api/posts//, {
+  return apiRequest('/api/posts/' + postId + '/', {
     method: 'PATCH',
     body: JSON.stringify({ caption: text })
   });
 }
 
 export async function deletePost(postId: string): Promise<void> {
-  return apiRequest(/api/posts//, {
+  return apiRequest('/api/posts/' + postId + '/', {
     method: 'DELETE'
   });
 }

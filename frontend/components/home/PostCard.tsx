@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Alert } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import Avatar from '@/components/ui/Avatar';
 import { Colors } from '@/constants/Colors';

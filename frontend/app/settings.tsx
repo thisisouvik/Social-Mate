@@ -52,8 +52,8 @@ function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Background Gradient/Image mock (soft fade) */}
-      <View style={styles.bgMock} />
+      {/* Background Gradient/Image (soft fade) */}
+      <View style={styles.bgGradient} />
 
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
@@ -107,13 +107,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  bgMock: {
+  bgGradient: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     height: 250,
-    backgroundColor: '#F3F8FC', // Mocking a subtle background at the top reflecting the screenshot
+    backgroundColor: '#F3F8FC', // Subtle background at the top reflecting the design
     opacity: 0.6,
   },
   header: {

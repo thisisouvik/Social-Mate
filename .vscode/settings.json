@@ -1,3 +1,14 @@
 {
-  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe"
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": false,
+  "terminal.integrated.profiles.windows": {
+    "Backend Console": {
+      "source": "PowerShell",
+      "args": ["-NoExit", "-Command", "cd backend; .\\.venv\\Scripts\\Activate.ps1"]
+    },
+    "Frontend Console": {
+      "source": "PowerShell",
+      "args": ["-NoExit", "-Command", "cd frontend"]
+    }
+  }
 }

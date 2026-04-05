@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  TextInput, Image,
+  TextInput, 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,7 @@ import {
   toggleFollow,
 } from '@/lib/socialApi';
 import { Colors } from '@/constants/Colors';
-import { BorderRadius, FontSize, FontWeight, Shadow, Spacing } from '@/constants/AppTheme';
+import { BorderRadius, FontSize, FontWeight,  Spacing } from '@/constants/AppTheme';
 import type { FollowUser } from '@/types/social';
 
 export default function SearchPeopleScreen() {

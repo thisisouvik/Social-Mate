@@ -4,6 +4,6 @@ import { useRouter } from 'expo-router';
 // This modal route is unused; redirect to tabs
 export default function Modal() {
   const router = useRouter();
-  useEffect(() => { router.replace('/(tabs)'); }, []);
+  useEffect(() => { router.replace('/(tabs)'); }, [router]);
   return null;
 }

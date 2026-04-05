@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, FlatList } from 'react-native';
+import React, {  useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -67,7 +67,7 @@ export default function UserProfileScreen() {
         ...prev,
         followers_count: res.is_following ? prev.followers_count + 1 : Math.max(0, prev.followers_count - 1)
       }));
-    } catch (e) {
+    } catch {
       setIsFollowing(!isFollowing); // revert
     }
   };
@@ -230,7 +230,7 @@ export default function UserProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F0F8FF' }, // Light blue tint to match mock
+  safe: { flex: 1, backgroundColor: '#F0F8FF' }, // Light blue tint to match design
   center: { justifyContent: 'center', alignItems: 'center' },
   errorText: { fontSize: FontSize.md, color: Colors.text.muted, marginTop: Spacing.sm },
   scrollContent: { paddingBottom: 100 },

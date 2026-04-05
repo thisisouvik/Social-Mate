@@ -118,7 +118,7 @@ export default function PostDetailScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/')} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color={Colors.text.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Comments</Text>

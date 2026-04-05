@@ -32,7 +32,7 @@ export default function StoryBar({ stories }: StoryBarProps) {
           text: 'New Story',
         });
         Alert.alert('Success', 'Story uploaded successfully!');
-      } catch (e) {
+      } catch {
         Alert.alert('Error', 'Failed to upload story');
       }
     }
