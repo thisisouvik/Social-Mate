@@ -73,9 +73,51 @@ sequenceDiagram
 ---
 
 ## 📸 App Interfaces
-> *[Screenshots of the Social-Mate Mobile App will be appended here.]*
+Here is a complete look at the Social-Mate Mobile App interface, demonstrating everything from authentication to creating posts and managing your profile.
 
-*(Coming Soon - Replace this block with visual assets demonstrating the Feed, Profile, and UI interfaces!)*
+<table align="center">
+  <tr>
+    <td align="center">
+      <b>Onboarding & Auth</b><br>
+      <img src="appScreens/onboarding page.png" width="250" />
+    </td>
+    <td align="center">
+      <b>Sign In / Sign Up</b><br>
+      <img src="appScreens/auth page.png" width="250" />
+    </td>
+    <td align="center">
+      <b>Home Feed</b><br>
+      <img src="appScreens/home screen.jpeg" width="250" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <b>Search / Explore</b><br>
+      <img src="appScreens/search screen.jpeg" width="250" />
+    </td>
+    <td align="center">
+      <b>Create Post</b><br>
+      <img src="appScreens/create post screen.jpeg" width="250" />
+    </td>
+     <td align="center">
+      <b>Create Group</b><br>
+      <img src="appScreens/create group screen.jpeg" width="250" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <b>User Profile</b><br>
+      <img src="appScreens/profile screen.jpeg" width="250" />
+    </td>
+    <td align="center">
+      <b>Profile Settings</b><br>
+      <img src="appScreens/profile settings.jpeg" width="250" />
+    </td>
+    <td align="center">
+      <!-- Empty space for symmetry -->
+    </td>
+  </tr>
+</table>
 
 ---
 
