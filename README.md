@@ -72,7 +72,32 @@ sequenceDiagram
 
 ---
 
-## 📸 App Interfaces
+## � Project Structure
+A high-level overview of the repository's architecture and workspace separation:
+
+```text
+Social-Mate/
+├── backend/                 # Django REST Framework Backend
+│   ├── backend_core/        # Main Django project settings & root URLs
+│   ├── follows/             # Social graph (follow/unfollow) mechanisms
+│   ├── notifications/       # User activity notifications
+│   ├── posts/               # Feed, posts, stories, likes & bookmarks
+│   ├── users/               # Custom user model & Supabase auth syncing
+│   └── sql/                 # Raw SQL scripts for Supabase RLS policies
+├── frontend/                # React Native (Expo) Frontend
+│   ├── app/                 # Mobile screens (Expo Router file-based routing)
+│   ├── components/          # Reusable UI elements (PostCards, Avatars, etc.)
+│   ├── context/             # Global React Context (e.g., AuthContext)
+│   ├── hooks/               # Custom React hooks (Theming)
+│   ├── lib/                 # Core SDKs (Supabase client, API interceptors)
+│   ├── constants/           # Design tokens (Colors, Typography, Layout spacing)
+│   └── assets/              # App icon, splash screen, and static graphics
+└── README.md
+```
+
+---
+
+## �📸 App Interfaces
 Here is a complete look at the Social-Mate Mobile App interface, demonstrating everything from authentication to creating posts and managing your profile.
 
 <table align="center">
