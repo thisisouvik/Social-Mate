@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Image, Text, StyleSheet } from 'react-native';
 import { Colors } from '@/constants/Colors';
 
@@ -11,16 +11,26 @@ interface AvatarProps {
 }
 
 export default function Avatar({ uri, name, size = 40, showOnline = false, style }: AvatarProps) {
+  const [imgError, setImgError] = useState(false);
+
+  // Reset error state whenever the URI changes (e.g. after a new photo is uploaded)
+  useEffect(() => {
+    setImgError(false);
+  }, [uri]);
+
   const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
   const radius = size / 2;
 
+  // Show image only if URI exists AND hasn't errored out
+  const showImage = !!uri && !imgError;
+
   return (
     <View style={[{ width: size, height: size }, style]}>
-      {uri ? (
+      {showImage ? (
         <Image
           source={{ uri, cache: 'reload' }}
           style={{ width: size, height: size, borderRadius: radius }}
-          key={uri}
+          onError={() => setImgError(true)}
         />
       ) : (
         <View style={[styles.placeholder, { width: size, height: size, borderRadius: radius }]}>
@@ -51,3 +61,4 @@ const styles = StyleSheet.create({
     borderColor: Colors.background,
   },
 });
+

@@ -71,13 +71,16 @@ function EditProfileScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No session found');
 
-      // Check if avatar has changed locally
-      let finalAvatarUrl = user.avatar;
-      if (avatarUri && avatarBase64 && avatarUri !== user.avatar && !avatarUri.startsWith('http')) {
-         const newUrl = await uploadAvatarToSupabase(avatarUri, avatarBase64);
-         if (newUrl) {
-            finalAvatarUrl = newUrl;
-         }
+      // Upload new avatar if user picked one (avatarBase64 is only set when a new image is picked)
+      let finalAvatarUrl: string | null = user.avatar || null;
+      if (avatarBase64 && avatarUri && !avatarUri.startsWith('http')) {
+        const newUrl = await uploadAvatarToSupabase(avatarUri, avatarBase64);
+        if (newUrl) {
+          finalAvatarUrl = newUrl;
+        } else {
+          // Upload failed — warn the user but still allow other fields to save
+          Alert.alert('Photo Upload Failed', 'Could not upload your new photo. Other changes will still be saved.');
+        }
       }
 
       // Sanitize website URL – prepend https:// if user typed a bare domain
@@ -97,7 +100,8 @@ function EditProfileScreen() {
           display_name: name,
           bio,
           gender,
-          avatar_url: finalAvatarUrl,
+          // Send null (not empty string) so Django URLField doesn't reject it
+          avatar_url: finalAvatarUrl || null,
           website: sanitizedWebsite || null,
         }),
       });
@@ -105,7 +109,7 @@ function EditProfileScreen() {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Update profile error:', errorText);
-        throw new Error("Failed to update profile. Make sure the website is a valid URL (e.g., https://example.com).");
+        throw new Error('Failed to update profile. Check your website URL and try again.');
       }
 
       await syncProfile(session.user, session.access_token);
