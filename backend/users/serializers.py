@@ -8,7 +8,7 @@ class UserMeSerializer(serializers.ModelSerializer):
     following_count = serializers.SerializerMethodField()
     posts_count = serializers.SerializerMethodField()
     photos_count = serializers.SerializerMethodField()
-    website = serializers.URLField(allow_blank=True, allow_null=True, required=False)
+    website = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     avatar_url = serializers.URLField(allow_blank=True, allow_null=True, required=False)
 
     def validate_website(self, value):

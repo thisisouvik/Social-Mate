@@ -18,6 +18,9 @@ def _get_jwk_client():
     return _jwk_client
 
 class SupabaseJWTAuthentication(authentication.BaseAuthentication):
+    def authenticate_header(self, request):
+        return 'Bearer realm="api"'
+
     def authenticate(self, request):
         auth_header = request.META.get('HTTP_AUTHORIZATION')
         
